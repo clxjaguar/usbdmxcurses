@@ -73,6 +73,7 @@ void display_init(void){
 	cbreak();  // line input buffering disabled ("raw" mode)
 	keypad(stdscr, TRUE); // I need that nifty F1 ?
 	noecho();  // curses call set to no echoing
+	curs_set(0);
 	refresh(); // this one made me scratching my head
 
 	msgw.drows = maxrows/4;
