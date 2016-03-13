@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <termios.h>
+#include <signal.h>
 #include <curses.h>
 
 // **** curses code section ****
@@ -49,7 +50,7 @@ typedef struct {
 	int crows;
 	int ccols;
 } dwin;
-dwin rxw, txw, msgw;
+dwin rxw, txw, msgw, helpw;
 
 void create_dwin(dwin *w, int rows, int cols, int startrow, int startcol, const char *title){
 	w->decoration = newwin(               rows,   cols,   startrow,   startcol);
@@ -63,7 +64,7 @@ void create_dwin(dwin *w, int rows, int cols, int startrow, int startcol, const 
 	wrefresh(w->decoration);
 }
 
-void destrow_dwin(dwin *w){
+void destroy_dwin(dwin *w){
 	if (w->content)    { destroy_win(w->content); }
 	if (w->decoration) { destroy_win(w->decoration); }
 }
@@ -427,6 +428,60 @@ void initserial(void){
 	tcsetattr(fd, TCSANOW, &options);
 }
 
+int redraw(void){
+	clear();
+	touchwin(stdscr);
+	refresh();
+	touchwin(rxw.decoration); wclear(rxw.content);
+	touchwin(txw.decoration); wclear(txw.content);
+	touchwin(msgw.decoration);
+	{
+		int i;
+		for(i=0; i<msgw.drows; i++){
+			wprintw(msgw.content, "\n");
+		}
+		for(i=0; i<=maxcols/4-2; i++){
+			redraw_channel(&txw, i+display_start_channel);
+			redraw_channel(&rxw, i+display_start_channel);
+		}
+	}
+	wrefresh(rxw.decoration);
+	wrefresh(txw.decoration);
+	wrefresh(msgw.decoration);
+	statusbar();
+	return 0;
+}
+
+int help(void){
+	static int help_on_screen = 0;
+	int width = 60; // cols
+	int height = 17; // row 
+	if (help_on_screen) {
+		destroy_dwin(&helpw);
+		help_on_screen = 0;
+		redraw();
+		return 0;
+	}
+	create_dwin(&helpw, height, width, (maxrows-height)/2, (maxcols-width)/2, "Help");
+	help_on_screen = 1;
+	wprintw(helpw.content, "\n");
+	wprintw(helpw.content, "Left/Right     Select Channel\n");
+	wprintw(helpw.content, "Up/Down        Adjust channel's level\n");
+	wprintw(helpw.content, "Pg Up/Pg Down  Full or black selected channel\n");
+	wprintw(helpw.content, "Space          Toggle selected channel output\n");
+	wprintw(helpw.content, "T              Toggle TX Enable\n");
+	wprintw(helpw.content, "t              Check TX status\n");
+	wprintw(helpw.content, "p/P            Toggle active polling of channels values\n");
+	wprintw(helpw.content, "B              Toggle Blackout!\n");
+	wprintw(helpw.content, "R              Toggle RX Enable\n");
+	wprintw(helpw.content, "s              What was the last received startcode ?\n");
+	wprintw(helpw.content, "r              Last read code/channel/fps ?\n");
+	wprintw(helpw.content, "v/V            Ask usbdmx.com adapter's version\n");
+	wprintw(helpw.content, "q/Q            Bye-bye!\n");
+	wrefresh(helpw.content);
+	return 0;
+}
+
 int main(int argc, char** argv){
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s /dev/your-usbdmx-tty\n", argv[0]);
@@ -576,26 +631,11 @@ int main(int argc, char** argv){
 					break;
 
 				case 12:
-					clear();
-					touchwin(stdscr);
-					refresh();
-					touchwin(rxw.decoration); wclear(rxw.content);
-					touchwin(txw.decoration); wclear(txw.content);
-					touchwin(msgw.decoration);
-					{
-						int i;
-						for(i=0; i<msgw.drows; i++){
-							wprintw(msgw.content, "\n");
-						}
-						for(i=0; i<=maxcols/4-2; i++){
-							redraw_channel(&txw, i+display_start_channel);
-							redraw_channel(&rxw, i+display_start_channel);
-						}
-					}
-					wrefresh(rxw.decoration);
-					wrefresh(txw.decoration);
-					wrefresh(msgw.decoration);
-					statusbar();
+					redraw();
+					break;
+					
+				case '?':
+					help();
 					break;
 
 				case 'B':
@@ -643,9 +683,9 @@ int main(int argc, char** argv){
 					wrefresh(msgw.content);
 			}
 			if (a == 'q' || a == 'Q'){
-				destrow_dwin(&rxw);
-				destrow_dwin(&txw);
-				destrow_dwin(&msgw);
+				destroy_dwin(&rxw);
+				destroy_dwin(&txw);
+				destroy_dwin(&msgw);
 				clear();
 				refresh();
 				endwin();
