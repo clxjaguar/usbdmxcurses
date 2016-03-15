@@ -452,23 +452,24 @@ int redraw(void){
 	return 0;
 }
 
+int help_on_screen = 0;
 int help(void){
-	static int help_on_screen = 0;
 	int width = 60; // cols
-	int height = 17; // row 
+	int height = 18; // row 
 	if (help_on_screen) {
 		destroy_dwin(&helpw);
 		help_on_screen = 0;
 		redraw();
 		return 0;
 	}
-	create_dwin(&helpw, height, width, (maxrows-height)/2, (maxcols-width)/2, "Help");
+	create_dwin(&helpw, height, width, (maxrows-height)/3, (maxcols-width)/2, "Help");
 	help_on_screen = 1;
 	wprintw(helpw.content, "\n");
 	wprintw(helpw.content, "Left/Right     Select Channel\n");
 	wprintw(helpw.content, "Up/Down        Adjust channel's level\n");
 	wprintw(helpw.content, "Pg Up/Pg Down  Full or black selected channel\n");
 	wprintw(helpw.content, "Space          Toggle selected channel output\n");
+	wprintw(helpw.content, "Enter          Flash selected channel output\n");
 	wprintw(helpw.content, "T              Toggle TX Enable\n");
 	wprintw(helpw.content, "t              Check TX status\n");
 	wprintw(helpw.content, "p/P            Toggle active polling of channels values\n");
@@ -535,6 +536,16 @@ int main(int argc, char** argv){
 		{
 			int a;
 			static int r = 0;
+			static int flashing, flash_old_value = 0, flash_old_channel = 0;
+			
+			if (flashing){
+				flashing--;
+				if (!flashing) {
+					update_channel(&txw, flash_old_channel, flash_old_value);
+					send3(0x48|((flash_old_channel>255)?1:0), flash_old_channel%256, txc[flash_old_channel]);
+				}
+			}
+			
 			a = wgetch(msgw.content);
 			switch (a){
 				case ERR:
@@ -542,6 +553,7 @@ int main(int argc, char** argv){
 					break;
 
 				case KEY_LEFT:
+					if (help_on_screen) { help(); }
 					if (selected_channel>0){
 						selected_channel--;
 						if (selected_channel<display_start_channel) {
@@ -564,6 +576,7 @@ int main(int argc, char** argv){
 					break;
 
 				case KEY_RIGHT:
+					if (help_on_screen) { help(); }
 					if (selected_channel<512) {
 						selected_channel++;
 						if (selected_channel>display_start_channel+maxcols/4-2) {
@@ -586,6 +599,7 @@ int main(int argc, char** argv){
 					break;
 
 				case KEY_UP:
+					if (help_on_screen) { help(); }
 					if (txc[selected_channel] < 255) {
 						r++;
 						{
@@ -598,6 +612,7 @@ int main(int argc, char** argv){
 					break;
 
 				case KEY_DOWN:
+					if (help_on_screen) { help(); }
 					if (txc[selected_channel]) {
 						r++;
 						{
@@ -610,16 +625,19 @@ int main(int argc, char** argv){
 					break;
 
 				case KEY_PPAGE:
+					if (help_on_screen) { help(); }
 					update_channel(&txw, selected_channel, 255);
 					send3(0x48|((selected_channel>255)?1:0), selected_channel%256, txc[selected_channel]);
 					break;
 
 				case KEY_NPAGE:
+					if (help_on_screen) { help(); }
 					update_channel(&txw, selected_channel, 0);
 					send3(0x48|((selected_channel>255)?1:0), selected_channel%256, txc[selected_channel]);
 					break;
 
-				case ' ':
+				case ' ': // <space>
+					if (help_on_screen) { help(); }
 					if (txc[selected_channel] == 255) {
 						update_channel(&txw, selected_channel, 0);
 						send3(0x48|((selected_channel>255)?1:0), selected_channel%256, txc[selected_channel]);
@@ -629,8 +647,20 @@ int main(int argc, char** argv){
 						send3(0x48|((selected_channel>255)?1:0), selected_channel%256, txc[selected_channel]);
 					}
 					break;
+					
+				case 10: // <enter>
+					if (help_on_screen) { help(); }
+					if (!flashing) {
+						flash_old_value = txc[selected_channel];
+						flash_old_channel = selected_channel;
+						update_channel(&txw, selected_channel, 255);
+						send3(0x48|((selected_channel>255)?1:0), selected_channel%256, txc[selected_channel]);
+					}
+					flashing = 3;
+					break;
 
-				case 12:
+				case 12: // ^L
+					if (help_on_screen) { help(); }
 					redraw();
 					break;
 					
@@ -660,14 +690,17 @@ int main(int argc, char** argv){
 
 				case 'v':
 				case 'V':
+					if (help_on_screen) { help(); }
 					send1(0x24); //ask version informations
 					break;
 
 				case 's':
+					if (help_on_screen) { help(); }
 					send1(0x6c); // ask last rx start code
 					break;
 
 				case 'r':
+					if (help_on_screen) { help(); }
 					send1(0x6c); // ask last read code
 					send1(0x68); // ask last channel number
 					send1(0x6a); // ask rx fps
@@ -679,10 +712,12 @@ int main(int argc, char** argv){
 					break;
 
 				default:
+					if (help_on_screen) { help(); }
 					wprintw(msgw.content, "[%d]", a);
 					wrefresh(msgw.content);
 			}
 			if (a == 'q' || a == 'Q'){
+				if (help_on_screen) { help(); }
 				destroy_dwin(&rxw);
 				destroy_dwin(&txw);
 				destroy_dwin(&msgw);
