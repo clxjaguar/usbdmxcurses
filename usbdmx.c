@@ -174,9 +174,9 @@ void redraw_channel(dwin *w, unsigned int channel){
 	}
 	wmove(w->content, w->crows-1, (channel-display_start_channel)*4);
 	if (selected) { wattron (w->content, A_REVERSE); }
-	if (channel<10)  { wprintw(w->content, " "); }
+	if (channel+1 < 10)  { wprintw(w->content, " "); }
 	wprintw(w->content, "%u", channel+1);
-	if (channel<100) { wprintw(w->content, " "); }
+	if (channel+1 < 100) { wprintw(w->content, " "); }
 	if (selected) { wattroff(w->content, A_REVERSE); }
 
 	wmove(w->content, ((255-a[channel])*(w->crows-3)/255), (channel-display_start_channel)*4);
@@ -527,7 +527,7 @@ int main(int argc, char** argv){
 			}
 			else {
 				read_tx_channel_value(display_start_channel+status.txvaluespolling_channel);
-				if (++status.txvaluespolling_channel>=maxcols/4-2) {
+				if (++status.txvaluespolling_channel>maxcols/4-2) {
 					status.txvaluespolling_channel=0;
 				}
 			}
@@ -577,7 +577,7 @@ int main(int argc, char** argv){
 
 				case KEY_RIGHT:
 					if (help_on_screen) { help(); }
-					if (selected_channel<512) {
+					if (selected_channel<511) {
 						selected_channel++;
 						if (selected_channel>display_start_channel+maxcols/4-2) {
 							display_start_channel=selected_channel-(maxcols/4-2);
