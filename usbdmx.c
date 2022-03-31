@@ -1,13 +1,13 @@
-/*********************************************
-***    USBDMX.COM CURSES SIMPLE PROGRAM    ***
-*** http://sourceforge.net/p/usbdmxcurses/ ***
-***    Author: cLx <clx@sdf.lonestar.org>  ***
-***   Licence:   GNU PUBLIC LICENCE v3     ***
-***                                        ***
-***    Wanna see my rebuilt DMX adapter?   ***
-***  http://clx.freeshell.org/usbdmx.html  ***
-*********************************************/
-
+/*****************************************************
+***        USBDMX.COM CURSES SIMPLE PROGRAM        ***
+*** https://sourceforge.net/projects/usbdmxcurses/ ***
+*** https://github.com/clxjaguar/usbdmxcurses/     ***
+***    Author:   cLx <clx@sdf.org>                 ***
+***   Licence:   GNU PUBLIC LICENCE v3             ***
+***                                                ***
+***    Wanna see my rebuilt DMX adapter?           ***
+***  http://clx.freeshell.org/usbdmx.html          ***
+******************************************************/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +36,7 @@
 #define TRUE 1
 #endif
 
-void destroy_win(WINDOW *lwin){
+void destroy_win(WINDOW *lwin) {
 	wborder(lwin, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
 	wrefresh(lwin);
 	delwin(lwin);
@@ -52,7 +52,7 @@ typedef struct {
 } dwin;
 dwin rxw, txw, msgw, helpw;
 
-void create_dwin(dwin *w, int rows, int cols, int startrow, int startcol, const char *title){
+void create_dwin(dwin *w, int rows, int cols, int startrow, int startcol, const char *title) {
 	w->decoration = newwin(               rows,   cols,   startrow,   startcol);
 	w->content    = subwin(w->decoration, rows-2, cols-4, startrow+1, startcol+2);
 	w->drows = rows;     w->dcols = cols;
@@ -64,12 +64,12 @@ void create_dwin(dwin *w, int rows, int cols, int startrow, int startcol, const 
 	wrefresh(w->decoration);
 }
 
-void destroy_dwin(dwin *w){
+void destroy_dwin(dwin *w) {
 	if (w->content)    { destroy_win(w->content); }
 	if (w->decoration) { destroy_win(w->decoration); }
 }
 
-void display_init(void){
+void display_init(void) {
 	initscr(); // start curses mode
 	cbreak();  // line input buffering disabled ("raw" mode)
 	keypad(stdscr, TRUE); // I need that nifty F1 ?
@@ -92,7 +92,7 @@ void display_init(void){
 	wtimeout(msgw.content, 100);
 	{
 		int i;
-		for(i=0; i<msgw.drows; i++){
+		for(i=0; i<msgw.drows; i++) {
 			wprintw(msgw.content, "\n");
 		}
 	}
@@ -113,27 +113,27 @@ struct tstatus {
 };
 struct tstatus status;
 
-void statusbar(void){
+void statusbar(void) {
 	wmove(stdscr, maxrows-1, 0);
-	if (status.tx){
+	if (status.tx) {
 		attron (A_REVERSE); wprintw(stdscr, "TX ACTIVE");
 		attroff(A_REVERSE); wprintw(stdscr, " ");
 	}
-	if (status.rxenabled){
+	if (status.rxenabled) {
 		attron (A_REVERSE); wprintw(stdscr, "RX ENABLED");
 		attroff(A_REVERSE); wprintw(stdscr, " ");
 	}
-	if (status.rxreceiving){
+	if (status.rxreceiving) {
 		attron (A_REVERSE); wprintw(stdscr, "RECEIVING DMX");
 		attroff(A_REVERSE); wprintw(stdscr, " ");
 	}
-	if (status.blackout){
+	if (status.blackout) {
 		attron (A_REVERSE); wprintw(stdscr, "BLACKOUT");
 		attroff(A_REVERSE); wprintw(stdscr, " ");
 	}
-	if (status.txvaluespolling){
+	if (status.txvaluespolling) {
 		attron (A_REVERSE);
-		if (status.txvaluespolling_atrun){
+		if (status.txvaluespolling_atrun) {
 			wprintw(stdscr, "INITIAL ");
 		}
 		wprintw(stdscr, "POLLING TX VALUES");
@@ -149,13 +149,13 @@ void statusbar(void){
 	wrefresh(stdscr);
 }
 
-void display_message(int nonewline, char *text){
+void display_message(int nonewline, char *text) {
 	if (!nonewline) { wprintw(msgw.content, "\n"); }
 	wprintw(msgw.content, "%s", text);
 	wrefresh(msgw.content);
 }
 
-void redraw_channel(dwin *w, unsigned int channel){
+void redraw_channel(dwin *w, unsigned int channel) {
 	unsigned char *a;
 	int n;
 	bool selected = FALSE;
@@ -168,7 +168,7 @@ void redraw_channel(dwin *w, unsigned int channel){
 	if (selected_channel>display_start_channel+maxcols/4-2) { return; }
 	if (selected_channel<display_start_channel) { return; }
 
-	for (n=0; n<=((w->crows)-3); n++){
+	for (n=0; n<=((w->crows)-3); n++) {
 		wmove(w->content, n, (channel-display_start_channel)*4);
 		wprintw(w->content, " |  ");
 	}
@@ -187,7 +187,7 @@ void redraw_channel(dwin *w, unsigned int channel){
 	if (selected) { wattroff(w->content, A_REVERSE); }
 }
 
-void update_channel(dwin *w, unsigned int channel, int value){
+void update_channel(dwin *w, unsigned int channel, int value) {
 	unsigned char *a;
 	bool selected = FALSE;
 
@@ -217,35 +217,35 @@ void update_channel(dwin *w, unsigned int channel, int value){
 int wait;
 int fd;
 
-int send1(unsigned char byte){
+int send1(unsigned char byte) {
 	unsigned char buf[2];
 	buf[0] = byte; buf[1] = 0;
 	return write(fd, buf, 1);
 }
 
-int send2(unsigned char byte1, unsigned char byte2){
+int send2(unsigned char byte1, unsigned char byte2) {
 	unsigned char buf[3];
 	buf[0] = byte1; buf[1] = byte2; buf[2] = 0;
 	return write(fd, buf, 2);
 }
 
-int send3(unsigned char byte1, unsigned char byte2, unsigned char byte3){
+int send3(unsigned char byte1, unsigned char byte2, unsigned char byte3) {
 	unsigned char buf[4];
 	buf[0] = byte1; buf[1] = byte2; buf[2] = byte3; buf[3] = 0;
 	return write(fd, buf, 3);
 }
 
 #define BUFSIZE    1000
-unsigned char* getdmxmessages(unsigned char attended_message){
+unsigned char* getdmxmessages(unsigned char attended_message) {
 	unsigned char message;
 	static unsigned char buf[BUFSIZE+1];
 	ssize_t l;
 	int loop;
-	for (loop=0; loop<100; loop++){
+	for (loop=0; loop<100; loop++) {
 		l = read(fd, &message, 1);
-		if (l<=0){ usleep(100); }
+		if (l<=0) { usleep(100); }
 		else {
-			switch(message){
+			switch(message) {
 				case 0xa4: //version request (0x24)
 					usleep(200000);
 					l = read(fd, buf, BUFSIZE);
@@ -376,7 +376,7 @@ unsigned char* getdmxmessages(unsigned char attended_message){
 	return NULL;
 }
 
-unsigned char read_tx_channel_value(unsigned int channel){
+unsigned char read_tx_channel_value(unsigned int channel) {
 	unsigned char *buf;
 	unsigned offset = 0;
 	if (channel < 256) {
@@ -395,12 +395,12 @@ unsigned char read_tx_channel_value(unsigned int channel){
 	return 0;
 }
 
-void toggle(bool *var){
+void toggle(bool *var) {
 	if (*var == TRUE) { *var = FALSE; }
 	else { *var = TRUE; }
 }
 
-void initserial(void){
+void initserial(void) {
 	struct termios options;
 	tcgetattr(fd, &options);
 	options.c_oflag = 0;
@@ -428,7 +428,7 @@ void initserial(void){
 	tcsetattr(fd, TCSANOW, &options);
 }
 
-int redraw(void){
+int redraw(void) {
 	clear();
 	touchwin(stdscr);
 	refresh();
@@ -437,10 +437,10 @@ int redraw(void){
 	touchwin(msgw.decoration);
 	{
 		int i;
-		for(i=0; i<msgw.drows; i++){
+		for(i=0; i<msgw.drows; i++) {
 			wprintw(msgw.content, "\n");
 		}
-		for(i=0; i<=maxcols/4-2; i++){
+		for(i=0; i<=maxcols/4-2; i++) {
 			redraw_channel(&txw, i+display_start_channel);
 			redraw_channel(&rxw, i+display_start_channel);
 		}
@@ -453,9 +453,9 @@ int redraw(void){
 }
 
 int help_on_screen = 0;
-int help(void){
+int help(void) {
 	int width = 60; // cols
-	int height = 18; // row 
+	int height = 18; // row
 	if (help_on_screen) {
 		destroy_dwin(&helpw);
 		help_on_screen = 0;
@@ -483,7 +483,7 @@ int help(void){
 	return 0;
 }
 
-int main(int argc, char** argv){
+int main(int argc, char** argv) {
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s /dev/your-usbdmx-tty\n", argv[0]);
 		return -1;
@@ -503,7 +503,7 @@ int main(int argc, char** argv){
 	status.txvaluespolling_channel = 0;
 	{
 	int i;
-	for(i=0; i<=maxcols/4-2; i++){
+	for(i=0; i<=maxcols/4-2; i++) {
 		redraw_channel(&txw, i+display_start_channel);
 		redraw_channel(&rxw, i+display_start_channel);
 	}}
@@ -512,10 +512,10 @@ int main(int argc, char** argv){
 	send1(0x50); //check tx status
 	send1(0x4c); //blackout OFF
 
-	for(;;){
+	for(;;) {
 		getdmxmessages(0);
 
-		if (status.txvaluespolling){
+		if (status.txvaluespolling) {
 			if (status.txvaluespolling_atrun) {
 				read_tx_channel_value(status.txvaluespolling_channel);
 				if (++status.txvaluespolling_channel>=512) {
@@ -537,30 +537,30 @@ int main(int argc, char** argv){
 			int a;
 			static int r = 0;
 			static int flashing, flash_old_value = 0, flash_old_channel = 0;
-			
-			if (flashing){
+
+			if (flashing) {
 				flashing--;
 				if (!flashing) {
 					update_channel(&txw, flash_old_channel, flash_old_value);
 					send3(0x48|((flash_old_channel>255)?1:0), flash_old_channel%256, txc[flash_old_channel]);
 				}
 			}
-			
+
 			a = wgetch(msgw.content);
-			switch (a){
+			switch (a) {
 				case ERR:
 					r=0;
 					break;
 
 				case KEY_LEFT:
 					if (help_on_screen) { help(); }
-					if (selected_channel>0){
+					if (selected_channel>0) {
 						selected_channel--;
 						if (selected_channel<display_start_channel) {
 							display_start_channel=selected_channel;
 							{
 								int i;
-								for(i=0; i<=maxcols/4-2; i++){
+								for(i=0; i<=maxcols/4-2; i++) {
 									redraw_channel(&txw, i+display_start_channel);
 									redraw_channel(&rxw, i+display_start_channel);
 								}
@@ -583,7 +583,7 @@ int main(int argc, char** argv){
 							display_start_channel=selected_channel-(maxcols/4-2);
 							{
 								int i;
-								for(i=0; i<=maxcols/4-2; i++){
+								for(i=0; i<=maxcols/4-2; i++) {
 									redraw_channel(&txw, i+display_start_channel);
 									redraw_channel(&rxw, i+display_start_channel);
 								}
@@ -647,7 +647,7 @@ int main(int argc, char** argv){
 						send3(0x48|((selected_channel>255)?1:0), selected_channel%256, txc[selected_channel]);
 					}
 					break;
-					
+
 				case 10: // <enter>
 					if (help_on_screen) { help(); }
 					if (!flashing) {
@@ -663,13 +663,13 @@ int main(int argc, char** argv){
 					if (help_on_screen) { help(); }
 					redraw();
 					break;
-					
+
 				case '?':
 					help();
 					break;
 
 				case 'B':
-					if (!status.blackout){ send1(0x4a); } // blackout on
+					if (!status.blackout) { send1(0x4a); } // blackout on
 					else { send1(0x4c); } // blackout off
 					break;
 				case 't':
@@ -677,7 +677,7 @@ int main(int argc, char** argv){
 					break;
 
 				case 'T':
-					if (!status.tx){ send1(0x44); } // TX On
+					if (!status.tx) { send1(0x44); } // TX On
 					else { send1(0x46); } // TX Off
 					break;
 
@@ -707,7 +707,7 @@ int main(int argc, char** argv){
 					break;
 
 				case 'R':
-					if (!status.rxenabled){ send1(0x64); } // RX On
+					if (!status.rxenabled) { send1(0x64); } // RX On
 					else { send1(0x66); } // RX Off
 					break;
 
@@ -716,7 +716,7 @@ int main(int argc, char** argv){
 					wprintw(msgw.content, "[%d]", a);
 					wrefresh(msgw.content);
 			}
-			if (a == 'q' || a == 'Q'){
+			if (a == 'q' || a == 'Q') {
 				if (help_on_screen) { help(); }
 				destroy_dwin(&rxw);
 				destroy_dwin(&txw);
