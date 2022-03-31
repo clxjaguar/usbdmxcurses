@@ -243,7 +243,14 @@ unsigned char* getdmxmessages(unsigned char attended_message) {
 	int loop;
 	for (loop=0; loop<100; loop++) {
 		l = read(fd, &message, 1);
-		if (l<=0) { usleep(100); }
+		if (l == -1) {
+			usleep(100);
+		}
+		else if (l == 0) {
+			endwin();
+			perror("Device unplugged");
+			exit(-1);
+		}
 		else {
 			switch(message) {
 				case 0xa4: //version request (0x24)
