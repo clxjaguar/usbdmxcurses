@@ -516,9 +516,9 @@ int main(int argc, char** argv) {
 		getdmxmessages(0);
 
 		if (status.txvaluespolling) {
+			read_tx_channel_value(status.txvaluespolling_channel++);
 			if (status.txvaluespolling_atrun) {
-				read_tx_channel_value(status.txvaluespolling_channel);
-				if (++status.txvaluespolling_channel>=512) {
+				if (status.txvaluespolling_channel >= 512) {
 					status.txvaluespolling_atrun = 0;
 					status.txvaluespolling = 0;
 					status.txvaluespolling_channel=0;
@@ -526,9 +526,8 @@ int main(int argc, char** argv) {
 				}
 			}
 			else {
-				read_tx_channel_value(display_start_channel+status.txvaluespolling_channel);
-				if (++status.txvaluespolling_channel>maxcols/4-2) {
-					status.txvaluespolling_channel=0;
+				if (status.txvaluespolling_channel > (int)display_start_channel + maxcols/4-2) {
+					status.txvaluespolling_channel=display_start_channel;
 				}
 			}
 		}
